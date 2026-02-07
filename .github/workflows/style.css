@@ -1,0 +1,36 @@
+
+:root{
+  --bg:#0b0b0d;
+  --card:#0f1113;
+  --muted:#9aa3b2;
+  --accent:#06b6d4;
+  --glass: rgba(255,255,255,0.03);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background: linear-gradient(135deg, #0b0b0d, #1b2735);color:#e6eef6;line-height:1.6}
+.container{max-width:1000px;margin:0 auto;padding:40px}
+nav{display:flex;justify-content:space-between;align-items:center;padding:18px 32px;background:transparent;position:sticky;top:0;backdrop-filter:blur(6px);z-index:100}
+.brand{display:flex;align-items:center;gap:12px}
+.brand img{width:46px;height:46px;border-radius:8px;object-fit:cover}
+.brand h1{font-size:18px;margin:0}
+.nav-links{display:flex;gap:18px;align-items:center}
+.nav-links a{color:var(--muted);text-decoration:none;padding:8px 12px;border-radius:8px}
+.nav-links a:hover{color:#fff;background:var(--glass)}
+.header{display:flex;gap:40px;align-items:center;padding:60px 0}
+.profile{width:260px;flex:0 0 260px}
+.profile img{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,0.04)}
+.intro{flex:1}
+.h1{font-size:28px;margin:0 0 8px}
+.subtitle{color:var(--muted);margin:0 0 18px}
+.btn{display:inline-block;padding:10px 16px;border-radius:8px;text-decoration:none}
+.btn-primary{background:linear-gradient(90deg,var(--accent),#7c3aed);color:#06121a}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-top:24px}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+.kv{color:var(--muted);font-size:14px}
+.skills-list{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.skill{background:rgba(255,255,255,0.03);padding:8px 10px;border-radius:8px;font-size:13px;color:var(--muted)}
+footer{padding:28px 0;color:var(--muted);text-align:center;border-top:1px solid rgba(255,255,255,0.03);margin-top:40px}
+@media(max-width:700px){
+  .header{flex-direction:column;align-items:flex-start}
+  nav{padding:12px}
+}
