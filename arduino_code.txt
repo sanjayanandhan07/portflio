@@ -1,0 +1,124 @@
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include "HX711.h"
+#include <esp_task_wdt.h>  // Watchdog Timer
+
+// Wi-Fi Credentials
+const char* ssid = "Sandy";
+const char* password = "09876543";
+
+// MQTT Broker
+const char* mqtt_server = "broker.emqx.io";
+const int mqtt_port = 1883;
+const char* topic_weight = "bmi/weight";
+const char* topic_height = "bmi/height";
+const char* topic_bmi = "bmi/value";
+
+// Ultrasonic Sensor Pins
+const int trigPin = 5;  // GPIO5
+const int echoPin = 18; // GPIO18
+
+// HX711 Load Cell Pins
+#define DOUT 19  // HX711 DOUT -> ESP32 GPIO14
+#define CLK  27  // HX711 SCK -> ESP32 GPIO27
+
+HX711 scale;
+
+// MQTT Client
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+// Fixed height of the sensor position (in cm)
+const float FIXED_HEIGHT = 200.0;
+
+void connectWiFi() {
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+    yield();
+  }
+  Serial.println("\nWiFi connected");
+}
+
+void connectMQTT() {
+  while (!client.connected()) {
+    if (client.connect("ESP32_BMI_Client")) {
+      Serial.println("Connected to MQTT Broker!");
+    } else {
+      delay(2000);
+    }
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  connectWiFi();
+  client.setServer(mqtt_server, mqtt_port);
+  connectMQTT();
+
+  // Initialize Load Cell
+  scale.begin(DOUT, CLK);
+  Serial.println("Remove all weight. Taring...");
+  delay(500);
+  scale.tare();  // Reset scale to zero
+  Serial.println("Taring complete!");
+
+  scale.set_scale(15000.0);  // Adjust based on calibration
+
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+}
+
+void loop() {
+  if (!client.connected()) {
+    connectMQTT();
+  }
+
+  // Measure weight
+  float weight = scale.get_units(10);  // Average over 10 readings
+
+  // Measure distance using ultrasonic sensor
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  long duration = pulseIn(echoPin, HIGH, 30000); // Timeout after 30ms
+  
+  if (duration == 0) {
+    Serial.println("Ultrasonic sensor timeout!");
+    return;
+  }
+
+  float distance = duration * 0.034 / 2;  // Distance in cm from sensor to person's head
+
+  // Calculate person's height
+  float height = FIXED_HEIGHT - distance;  // Person's height = fixed height - measured distance
+
+  // Calculate BMI
+  float height_m = height / 100.0;  // Convert height to meters
+  float bmi = (weight) / (height_m * height_m);
+
+  // Publish Data to MQTT
+  client.publish(topic_weight, String(weight).c_str());
+  client.publish(topic_height, String(height).c_str());
+  client.publish(topic_bmi, String(bmi).c_str());
+
+  // Print values
+  Serial.print("Weight: ");
+  Serial.print(weight, 2);
+  Serial.println(" kg");
+  Serial.print("Distance from sensor: ");
+  Serial.print(distance, 2);
+  Serial.println(" cm");
+  Serial.print("Height: ");
+  Serial.print(height, 2);
+  Serial.println(" cm");
+  Serial.print("BMI: ");
+  Serial.println(bmi, 2);
+
+  yield(); // Prevent watchdog timeout
+  delay(5000);  // Send data every 5 seconds
+}
